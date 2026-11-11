@@ -1,0 +1,6 @@
+{
+  "name": "AI for Teachers",
+  "description": "A practical AI prompt library and classroom toolkit for teachers, featuring 240+ ready-to-use prompts for lesson planning, assessment, feedback, parent communication, and productivity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
