@@ -19,8 +19,8 @@ import { BestPracticesModal } from './BestPracticesModal';
 import { PromptCard } from './PromptCard';
 
 interface PromptLibraryProps {
-  user?: TeacherUser;
-  onLogout?: () => void;
+  user: TeacherUser;
+  onLogout: () => void;
 }
 
 export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout }) => {
@@ -90,22 +90,20 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout }) 
               <BookOpen className="w-4 h-4 text-indigo-300" />
               <span>SAVITRIX</span>
             </div>
-            {user && onLogout && (
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-indigo-100 truncate max-w-[240px]">
-                  {user.fullName}{' '}
-                  <span className="text-indigo-300 font-mono text-xs">(@{user.userId})</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign out</span>
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-indigo-100 truncate max-w-[240px]">
+                {user.fullName}{' '}
+                <span className="text-indigo-300 font-mono text-xs">(@{user.userId})</span>
+              </span>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign out</span>
+              </button>
+            </div>
           </div>
 
           {/* Hero Title & Subtitle */}
