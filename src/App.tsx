@@ -7,33 +7,18 @@ import { useEffect, useState } from 'react';
 import { AuthPage } from './components/AuthPage';
 import { PromptLibrary } from './components/PromptLibrary';
 import { TeacherUser } from './data/types';
-
-const TOKEN_KEY = 'ai_for_teachers_token';
+import { clearSession, restoreSession, TOKEN_KEY } from './utils/authClient';
 
 export default function App() {
   const [user, setUser] = useState<TeacherUser | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      setCheckingSession(false);
-      return;
-    }
-
-    fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.user) {
-          setUser(data.user);
-        } else {
-          localStorage.removeItem(TOKEN_KEY);
+    restoreSession()
+      .then((restored) => {
+        if (restored) {
+          setUser(restored);
         }
-      })
-      .catch(() => {
-        localStorage.removeItem(TOKEN_KEY);
       })
       .finally(() => {
         setCheckingSession(false);
@@ -46,14 +31,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token) {
-      fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-      localStorage.removeItem(TOKEN_KEY);
-    }
+    clearSession();
     setUser(null);
   };
 

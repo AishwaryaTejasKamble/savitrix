@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { BookOpen, CheckCircle2, Eye, EyeOff, KeyRound, Lock, Mail, User, UserPlus } from 'lucide-react';
 import { TeacherUser } from '../data/types';
+import {
+  loginTeacher,
+  recoverUserId,
+  resetTeacherPassword,
+  signupTeacher,
+} from '../utils/authClient';
 
 interface AuthPageProps {
   onAuthSuccess: (user: TeacherUser, token: string) => void;
@@ -38,19 +44,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setSuccessMsg(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Unable to log in. Please check your credentials.');
-        return;
-      }
-      onAuthSuccess(data.user, data.token);
-    } catch {
-      setError('Network error. Please try again.');
+      const { user, token } = await loginTeacher(userId, password);
+      onAuthSuccess(user, token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to log in. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -62,19 +59,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setSuccessMsg(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, fullName, email, schoolOrSubject, password }),
+      const { user, token } = await signupTeacher({
+        userId,
+        fullName,
+        email,
+        schoolOrSubject,
+        password,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Unable to create account.');
-        return;
-      }
-      onAuthSuccess(data.user, data.token);
-    } catch {
-      setError('Network error. Please try again.');
+      onAuthSuccess(user, token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create account.');
     } finally {
       setLoading(false);
     }
@@ -86,20 +80,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setSuccessMsg(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-userid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Could not find an account with that email.');
-        return;
-      }
+      const data = await recoverUserId(email);
       setUserId(data.userId);
       setSuccessMsg(`Account found for ${data.fullName}. Your User ID is "${data.userId}".`);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Could not find an account with that email.'
+      );
     } finally {
       setLoading(false);
     }
@@ -111,22 +98,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setSuccessMsg(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, email, newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Could not reset password.');
-        return;
-      }
+      const message = await resetTeacherPassword({ userId, email, newPassword });
       setPassword('');
       setNewPassword('');
-      setSuccessMsg(data.message || 'Password reset successfully. You can now log in.');
+      setSuccessMsg(message);
       setView('login');
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not reset password.');
     } finally {
       setLoading(false);
     }
