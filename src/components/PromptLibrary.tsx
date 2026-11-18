@@ -21,9 +21,10 @@ import { PromptCard } from './PromptCard';
 interface PromptLibraryProps {
   user?: TeacherUser;
   onLogout?: () => void;
+  onOpenAdmin?: () => void;
 }
 
-export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout }) => {
+export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, onOpenAdmin }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | PromptCategory>('all');
   const [selectedSource, setSelectedSource] = useState<'all' | PromptSource>('all');
@@ -92,10 +93,20 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout }) 
             </div>
             {user && onLogout && (
               <div className="flex items-center gap-4 text-sm">
+                <div className="flex flex-col items-start gap-2">
                 <span className="text-indigo-100 truncate max-w-[240px]">
                   {user.fullName}{' '}
                   <span className="text-indigo-300 font-mono text-xs">(@{user.userId})</span>
                 </span>
+                {onOpenAdmin && <button
+                  type="button"
+                  onClick={onOpenAdmin}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                >
+                  <ShieldCheck aria-hidden="true" className="w-3.5 h-3.5" />
+                  <span>Admin dashboard</span>
+                </button>}
+                </div>
                 <button
                   type="button"
                   onClick={onLogout}
