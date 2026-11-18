@@ -17,6 +17,11 @@ import {
 import { PromptCategory, PromptSource, TeacherUser } from '../data/types';
 import { BestPracticesModal } from './BestPracticesModal';
 import { PromptCard } from './PromptCard';
+import { useTeacherWorkspace } from '../utils/useTeacherWorkspace';
+import type { PromptDraft } from '../utils/personalPrompts';
+import { FirstUseGuide } from './FirstUseGuide';
+import { SavedPromptEditor } from './SavedPromptEditor';
+import { SavedPrompts } from './SavedPrompts';
 
 interface PromptLibraryProps {
   user?: TeacherUser;
@@ -25,6 +30,9 @@ interface PromptLibraryProps {
 }
 
 export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, onOpenAdmin }) => {
+  const workspace = useTeacherWorkspace();
+  const [view, setView] = useState<'library' | 'favourites' | 'saved'>('library');
+  const [draft, setDraft] = useState<PromptDraft | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | PromptCategory>('all');
   const [selectedSource, setSelectedSource] = useState<'all' | PromptSource>('all');
@@ -49,6 +57,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
   const filteredPrompts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return ALL_PROMPTS.filter((item) => {
+      if (view === 'favourites' && !workspace.favourites.has(item.id)) return false;
       if (selectedSource !== 'all' && item.source !== selectedSource) {
         return false;
       }
@@ -65,7 +74,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         (item.solutionMethod && item.solutionMethod.toLowerCase().includes(q))
       );
     });
-  }, [searchQuery, selectedCategory, selectedSource]);
+  }, [searchQuery, selectedCategory, selectedSource, view, workspace.favourites]);
 
   const scrollCategories = (direction: 'left' | 'right') => {
     if (!categoryScrollRef.current) return;
@@ -143,6 +152,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               </span>
             </button>
 
+            <button type="button" onClick={() => workspace.setGuideOpen(true)} disabled={workspace.loading || Boolean(workspace.error)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-50">Quick start guide</button>
             <button
               type="button"
               onClick={() => setShowBestPractices(true)}
@@ -157,6 +167,14 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
+          {([['library', 'All prompts'], ['favourites', `Favourites (${workspace.favourites.size})`], ['saved', `My saved prompts (${workspace.saved.filter(r => !r.removed_at).length})`]] as const).map(([tab,label]) => <button key={tab} type="button" aria-current={view === tab ? 'page' : undefined} onClick={() => {setView(tab);setSearchQuery('');setSelectedCategory('all');setSelectedSource('all');}} className={`rounded-lg px-4 py-2.5 text-sm font-semibold border ${view === tab ? 'bg-indigo-700 border-indigo-700 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}>{label}</button>)}
+          <button type="button" onClick={workspace.reload} disabled={workspace.loading || workspace.busy || workspace.favouriteBusy.size > 0} className="rounded-lg px-3 py-2 text-xs text-slate-600 border border-slate-200 bg-white disabled:opacity-40">Refresh my workspace</button>
+        </nav>
+        {workspace.loading && <p role="status" className="text-sm text-slate-600">Syncing your favourites and saved prompts…</p>}
+        {workspace.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{workspace.error} <button type="button" onClick={workspace.reload} className="font-semibold underline">Retry</button></div>}
+        {view === 'saved' ? (!workspace.loading && !workspace.error && <SavedPrompts rows={workspace.saved} busy={workspace.busy} onEdit={setDraft} onArchive={workspace.archivePrompt} onNotify={handleNotify} />) : <>
+        {view === 'favourites' && <div><h2 className="text-xl font-bold">Favourites</h2><p className="mt-1 text-sm text-slate-600">Your starred library prompts, synced with your account.</p></div>}
         {/* Two Info Cards */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
@@ -362,13 +380,13 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         </section>
 
         {/* Prompt Cards List */}
-        {filteredPrompts.length === 0 ? (
+        {view === 'favourites' && (workspace.loading || workspace.error) ? null : filteredPrompts.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl p-10 text-center">
             <p className="font-display text-base font-bold text-slate-900">
-              No prompts match your current search or filter
+              {view === 'favourites' && !workspace.favourites.size ? 'Your favourites will appear here' : 'No prompts match your current search or filter'}
             </p>
             <p className="text-sm text-slate-500 mt-1">
-              Try clearing your search term or switching back to all categories.
+              {view === 'favourites' && !workspace.favourites.size ? 'Choose All prompts and tap the star on any prompt you want to keep handy.' : 'Try clearing your search term or switching back to all categories.'}
             </p>
             <button
               type="button"
@@ -387,6 +405,11 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
                 displayIndex={idx + 1}
                 selectedLanguage={selectedLanguage}
                 onNotify={handleNotify}
+                isFavourite={workspace.favourites.has(item.id)}
+                favouriteBusy={workspace.favouriteBusy.has(item.id)}
+                personalReady={!workspace.loading && !workspace.error}
+                onToggleFavourite={() => workspace.toggleFavourite(item.id)}
+                onSavePrompt={setDraft}
               />
             ))}
           </section>
@@ -405,7 +428,10 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
             </button>
           </div>
         )}
+        </>}
       </main>
+      {draft && <SavedPromptEditor draft={draft} onClose={() => setDraft(null)} onSave={async value => {await workspace.savePrompt(value);handleNotify(value.id ? 'Saved prompt updated.' : 'Saved to My saved prompts.');}} />}
+      {workspace.guideOpen && !workspace.loading && !workspace.error && <FirstUseGuide onComplete={workspace.completeGuide} />}
 
       {/* Best Practices Modal */}
       <BestPracticesModal

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowUpRight, Check, Copy, Languages, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpRight, Check, Copy, Languages, RotateCcw, SlidersHorizontal, Star, Save } from 'lucide-react';
 import {
   buildTranslationPrompt,
   getChatGPTUrl,
@@ -7,32 +7,18 @@ import {
   getGeminiUrl,
 } from '../data/prompts';
 import { PromptItem } from '../data/types';
+import { extractPlaceholders, applyPlaceholders, type PromptDraft } from '../utils/personalPrompts';
 
 interface PromptCardProps {
   item: PromptItem;
   displayIndex: number;
   selectedLanguage: string;
   onNotify: (message: string) => void;
-}
-
-function extractPlaceholders(text: string): string[] {
-  const matches = text.match(/\[[^\]]+\]/g) || [];
-  const seen = new Set<string>();
-  const unique: string[] = [];
-  for (const m of matches) {
-    if (!seen.has(m)) {
-      seen.add(m);
-      unique.push(m);
-    }
-  }
-  return unique;
-}
-
-function applyPlaceholders(text: string, values: Record<string, string>): string {
-  return text.replace(/\[[^\]]+\]/g, (match) => {
-    const val = values[match]?.trim();
-    return val ? val : match;
-  });
+  isFavourite?: boolean;
+  favouriteBusy?: boolean;
+  personalReady?: boolean;
+  onToggleFavourite?: () => Promise<void>;
+  onSavePrompt?: (draft: PromptDraft) => void;
 }
 
 function renderHighlightedPrompt(
@@ -68,6 +54,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   displayIndex,
   selectedLanguage,
   onNotify,
+  isFavourite = false, favouriteBusy = false, personalReady = false, onToggleFavourite, onSavePrompt,
 }) => {
   const [copied, setCopied] = useState(false);
   const [showTranslateBar, setShowTranslateBar] = useState(false);
@@ -138,6 +125,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
             <span>{item.sourceLabel}</span>
           </div>
         </div>
+        {onToggleFavourite && <button type="button" aria-label={`${isFavourite ? 'Remove from' : 'Add to'} favourites: ${item.title}`} aria-pressed={isFavourite} disabled={!personalReady || favouriteBusy} onClick={async () => {try {await onToggleFavourite();} catch (e) {onNotify(e instanceof Error ? e.message : 'Could not update favourites.');}}} className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold shrink-0 disabled:opacity-40 ${isFavourite ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}><Star aria-hidden="true" className={`w-4 h-4 ${isFavourite ? 'fill-amber-400 text-amber-600' : ''}`} /><span className="hidden sm:inline">{isFavourite ? 'Favourited' : 'Favourite'}</span></button>}
       </div>
 
       {/* Problem statement (if present) */}
@@ -187,6 +175,8 @@ export const PromptCard: React.FC<PromptCardProps> = ({
             <span>{hasCustomValues ? 'Customize prompt (Active)' : 'Customize prompt'}</span>
           </button>
         )}
+
+        {onSavePrompt && <button type="button" disabled={!personalReady} onClick={() => onSavePrompt({title:item.title,content:effectivePrompt,source_prompt_id:item.id})} className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold px-3.5 py-2 rounded-lg min-h-[38px] disabled:opacity-40"><Save className="w-3.5 h-3.5"/><span>Save my prompt</span></button>}
 
         <button
           type="button"
@@ -265,6 +255,8 @@ export const PromptCard: React.FC<PromptCardProps> = ({
                   </label>
                   <input
                     type="text"
+                    aria-label={label}
+                    maxLength={2000}
                     value={placeholderValues[token] ?? ''}
                     onChange={(e) => handlePlaceholderChange(token, e.target.value)}
                     placeholder={`Enter ${label}...`}
