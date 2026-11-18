@@ -31,3 +31,9 @@ There is no Gemini API dependency in this version: prompt buttons open external 
 Copy `.env.example` to `.env.local` and fill in the two public Supabase values. With dependencies already available, run `npm run dev` for local development, `npm run typecheck` for TypeScript checks, and `npm run build` for the production bundle. `npm test` runs adapter tests against a mocked authentication provider on Node.js 22.13+ and creates no live accounts.
 
 `server.ts` and the old local authentication implementation have been removed. The deployed app no longer needs a writable JSON users file or an in-memory session server. If authentication configuration is missing, the app displays a setup message and disables login instead of creating browser-only accounts.
+
+## Owner dashboard
+
+Open `/admin` after signing in with the owner account. The dashboard shows paginated registered accounts, verification, latest sign-in, and last recorded app activity. Search uses email. A five-minute heartbeat runs only while a signed-in app is visible; anonymous visitors and historical prompt usage are not tracked. The activity timestamp is a coarse signal, not an online indicator or time-spent measure. The app displays an activity notice.
+
+`database/admin-dashboard.sql` records the hosted schema setup. Authentication triggers maintain a minimal directory; row-level security limits directory reads to members of `savitrix_admins`. Browsers cannot grant admin membership, edit directory records, or write another user's activity. The internal directory trigger is privileged and unavailable through the API; no service key is shipped to browsers. Admin membership is seeded separately by the database owner after verifying the account. `database/admin-access-checks.sql` verifies owner/nonadmin/anonymous access and rolls back test writes. Account deletion and payment administration are not included.

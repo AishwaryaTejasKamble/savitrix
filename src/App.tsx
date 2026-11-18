@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { useEffect, useState } from 'react';
+import { AdminDashboard } from './components/AdminDashboard';
 import { AuthPage } from './components/AuthPage';
 import { PromptLibrary } from './components/PromptLibrary';
 import type { TeacherUser } from './data/types';
@@ -16,6 +17,28 @@ export default function App() {
       || new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery'
   );
   const [error, setError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(window.location.pathname === '/admin');
+  useEffect(() => {
+    setIsAdmin(false);
+    if (!user || recovering) return;
+    let active = true;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const db = getAuthClient();
+    void db.auth.getUser().then(async ({data, error}) => {
+      if (error || !data.user || !active) return;
+      const id = data.user.id;
+      const admin = await db.from('savitrix_admins').select('user_id').eq('user_id', id).maybeSingle();
+      if (active) setIsAdmin(Boolean(!admin.error && admin.data));
+      const record = () => {
+        if (!active || document.visibilityState !== 'visible') return;
+        void db.from('savitrix_activity').upsert({user_id:id}, {onConflict:'user_id'}).then(() => {});
+      };
+      record();
+      if (active) timer = setInterval(record, 5 * 60 * 1000);
+    }).catch(() => {});
+    return () => { active = false; if (timer) clearInterval(timer); };
+  }, [user?.email, recovering]);
 
   useEffect(() => {
     removeLegacyAccounts();
@@ -55,6 +78,10 @@ export default function App() {
           setRecovering(false);
           window.history.replaceState({}, '', window.location.pathname);
         }} />
-      : <PromptLibrary user={user} onLogout={handleLogout} />}
+      : showAdmin
+        ? isAdmin ? <AdminDashboard onBack={() => {setShowAdmin(false); window.history.replaceState({}, '', '/');}} />
+          : <main className="p-8"><h1 className="text-2xl font-bold">Admin access required</h1><p className="my-4">This dashboard is restricted to the Savitrix owner.</p><button onClick={() => {setShowAdmin(false); window.history.replaceState({}, '', '/');}}>Back to library</button></main>
+        : <><div className="bg-indigo-950 text-indigo-100 px-4 py-2 text-xs flex justify-between gap-4"><span>Signed-in activity is recorded to help the owner understand app usage.</span>{isAdmin && <button className="font-bold underline whitespace-nowrap" onClick={() => {setShowAdmin(true);window.history.replaceState({}, '', '/admin');}}>Admin dashboard</button>}</div><PromptLibrary user={user} onLogout={handleLogout} /></>}
+
   </>;
 }
