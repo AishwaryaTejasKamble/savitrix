@@ -7,6 +7,7 @@ import {
   getGeminiUrl,
 } from '../data/prompts';
 import { PromptItem } from '../data/types';
+import { recordPromptAction, providerAction } from '../utils/usageClient';
 import { extractPlaceholders, applyPlaceholders, type PromptDraft } from '../utils/personalPrompts';
 
 interface PromptCardProps {
@@ -77,23 +78,28 @@ export const PromptCard: React.FC<PromptCardProps> = ({
     try {
       await navigator.clipboard.writeText(text);
       onNotify(label);
+      recordPromptAction(item.id, 'copy');
+      return true;
     } catch {
       onNotify('Prompt ready — select and copy if clipboard is blocked.');
+      return false;
     }
   };
 
   const handleCopyPrompt = async () => {
-    await copyText(
+    const success = await copyText(
       effectivePrompt,
       hasCustomValues
         ? `Customized prompt #${displayIndex} copied to clipboard`
         : `Prompt #${displayIndex} copied to clipboard`
     );
+    if (!success) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleAgentLaunch = (agentName: string, textToCopy: string) => {
+    recordPromptAction(item.id, providerAction(agentName));
     navigator.clipboard?.writeText(textToCopy).catch(() => {});
     onNotify(`Opening ${agentName} with prompt ready (also copied to clipboard).`);
   };
@@ -163,7 +169,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         {placeholders.length > 0 && (
           <button
             type="button"
-            onClick={() => setShowCustomizeBar((prev) => !prev)}
+            onClick={() => {if(!showCustomizeBar)recordPromptAction(item.id,'customise');setShowCustomizeBar(prev=>!prev);}}
             aria-expanded={showCustomizeBar}
             className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg border transition-colors whitespace-nowrap shrink-0 min-h-[38px] ${
               showCustomizeBar || hasCustomValues

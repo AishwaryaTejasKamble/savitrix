@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { recordPromptAction } from './usageClient';
 import { getAuthClient } from './authClient';
 import { validateDraft, type PromptDraft, type SavedPrompt } from './personalPrompts';
 
@@ -33,6 +34,7 @@ export function useTeacherWorkspace() {
    const db=getAuthClient();const removing=favourites.has(promptId);
    const result=removing ? await db.from('savitrix_favourites').delete().eq('user_id',id).eq('prompt_id',promptId) : await db.from('savitrix_favourites').upsert({user_id:id,prompt_id:promptId},{onConflict:'user_id,prompt_id',ignoreDuplicates:true});
    if(result.error)throw new Error('Could not update your favourites. Please try again.');
+   if(!removing)recordPromptAction(promptId,'favourite');
    if(alive.current)setFavourites(previous=>{const next=new Set(previous);if(removing)next.delete(promptId);else next.add(promptId);return next;});
   } finally {favouriteLocks.current.delete(promptId);if(alive.current)setFavouriteBusy(new Set(favouriteLocks.current));}
  };
@@ -43,6 +45,7 @@ export function useTeacherWorkspace() {
    const db=getAuthClient();const payload={title:valid.title,content:valid.content,source_prompt_id:valid.source_prompt_id};
    const result=draft.id?await db.from('savitrix_saved_prompts').update(payload).eq('user_id',id).eq('id',draft.id).select().single():await db.from('savitrix_saved_prompts').insert({...payload,user_id:id}).select().single();
    if(result.error)throw new Error('Your prompt was not saved. Check your connection and try again.');
+   if(!draft.id)recordPromptAction(valid.source_prompt_id,'save');
    if(alive.current)setSaved(previous=>[result.data as SavedPrompt,...previous.filter(r=>r.id!==result.data.id)]);
   } finally {mutationLock.current=false;if(alive.current)setBusy(false);}
  };
