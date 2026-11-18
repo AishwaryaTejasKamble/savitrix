@@ -122,8 +122,8 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
             {user && onLogout && (
               <div ref={accountRef} className="relative shrink-0">
                 <button ref={accountButtonRef} type="button" aria-label={`Account options for ${user.fullName}`} aria-expanded={accountOpen} aria-controls={accountPanelId} title={user.fullName} onClick={()=>setAccountOpen(open=>!open)} className="inline-flex max-w-full items-center gap-2.5 rounded-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/40 bg-white text-sm font-bold text-indigo-900 shadow-sm">{initials}</span>
                   <span className="max-w-[min(45vw,14rem)] truncate text-sm font-semibold text-white">{user.fullName}</span>
+                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/40 bg-white text-sm font-bold text-indigo-900 shadow-sm">{initials}</span>
                 </button>
                 {accountOpen && <div id={accountPanelId} role="group" aria-label="Account actions" className="absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw_-_2rem)] overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm text-slate-800 shadow-xl">
                   <div className="border-b border-slate-100 px-3 py-3 mb-1"><p className="font-semibold break-words">{user.fullName}</p><p className="mt-1 text-xs text-slate-500 break-all">{user.email}</p></div>
