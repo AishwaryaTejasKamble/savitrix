@@ -1,10 +1,11 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   ArrowUp,
   BookOpen,
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Settings2,
   Search,
   ShieldCheck,
   X,
@@ -33,6 +34,21 @@ interface PromptLibraryProps {
 
 export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, onOpenAdmin }) => {
   const workspace = useTeacherWorkspace();
+  const [accountOpen,setAccountOpen]=useState(false);
+  const accountRef=useRef<HTMLDivElement>(null);
+  const accountButtonRef=useRef<HTMLButtonElement>(null);
+  const accountPanelId=useId();
+  const nameParts=(user?.fullName||'Teacher').trim().split(/\s+/).filter(Boolean);
+  const initials=[nameParts[0],...(nameParts.length>1?[nameParts[nameParts.length-1]]:[])].map(part=>Array.from(part||'T')[0]).join('').toLocaleUpperCase();
+  useEffect(()=>{
+    if(!accountOpen)return;
+    const outside=(event:Event)=>{if(!accountRef.current?.contains(event.target as Node))setAccountOpen(false);};
+    const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'){setAccountOpen(false);accountButtonRef.current?.focus();}};
+    document.addEventListener('pointerdown',outside);
+    document.addEventListener('focusin',outside);
+    document.addEventListener('keydown',escape);
+    return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('focusin',outside);document.removeEventListener('keydown',escape);};
+  },[accountOpen]);
   const [showProfile,setShowProfile]=useState(false),[showFeedback,setShowFeedback]=useState(false);
   const [view, setView] = useState<'library' | 'favourites' | 'saved'>('library');
   const [draft, setDraft] = useState<PromptDraft | null>(null);
@@ -104,30 +120,16 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               <span>SAVITRIX</span>
             </div>
             {user && onLogout && (
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex flex-col items-start gap-2">
-                <span className="text-indigo-100 truncate max-w-[240px]">
-                  {user.fullName}{' '}
-                  <span className="text-indigo-300 font-mono text-xs">(@{user.userId})</span>
-                </span>
-                <button type="button" onClick={()=>setShowProfile(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0">Profile settings</button>
-                {onOpenAdmin && <button
-                  type="button"
-                  onClick={onOpenAdmin}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
-                >
-                  <ShieldCheck aria-hidden="true" className="w-3.5 h-3.5" />
-                  <span>Admin dashboard</span>
-                </button>}
-                </div>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign out</span>
+              <div ref={accountRef} className="relative shrink-0">
+                <button ref={accountButtonRef} type="button" aria-label={`Account options for ${user.fullName}`} aria-expanded={accountOpen} aria-controls={accountPanelId} title={user.fullName} onClick={()=>setAccountOpen(open=>!open)} className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/40 bg-white text-sm font-bold text-indigo-900 shadow-sm transition-colors hover:bg-indigo-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+                  <span aria-hidden="true">{initials}</span>
                 </button>
+                {accountOpen && <div id={accountPanelId} role="group" aria-label="Account actions" className="absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw_-_2rem)] overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm text-slate-800 shadow-xl">
+                  <div className="border-b border-slate-100 px-3 py-3 mb-1"><p className="font-semibold break-words">{user.fullName}</p><p className="mt-1 text-xs text-slate-500 break-all">{user.email}</p></div>
+                  <button type="button" onClick={()=>{setAccountOpen(false);setShowProfile(true);}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100 focus-visible:bg-slate-100"><Settings2 aria-hidden="true" className="h-4 w-4 text-slate-500"/>Profile settings</button>
+                  {onOpenAdmin && <button type="button" onClick={()=>{setAccountOpen(false);onOpenAdmin();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100 focus-visible:bg-slate-100"><ShieldCheck aria-hidden="true" className="h-4 w-4 text-slate-500"/>Admin dashboard</button>}
+                  <div className="mt-1 border-t border-slate-100 pt-1"><button type="button" onClick={()=>{setAccountOpen(false);onLogout();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-red-700 hover:bg-red-50 focus-visible:bg-red-50"><LogOut aria-hidden="true" className="h-4 w-4"/>Sign out</button></div>
+                </div>}
               </div>
             )}
           </div>
@@ -145,27 +147,12 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
 
           {/* Header Action Buttons */}
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0"
-            >
-              <span>Browse all prompts</span>
-              <span className="font-mono text-xs text-indigo-200 tabular-nums">
-                {ALL_PROMPTS.length}
-              </span>
-            </button>
-
-            <button type="button" onClick={()=>setShowFeedback(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg">Feedback</button>
             <button type="button" onClick={() => workspace.setGuideOpen(true)} disabled={workspace.loading || Boolean(workspace.error)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-50">Quick start guide</button>
-            <button
-              type="button"
-              onClick={() => setShowBestPractices(true)}
-              className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Teacher best practices</span>
+            <button type="button" onClick={()=>{setView('library');resetFilters();}} className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0">
+              <span>Browse all prompts</span><span className="font-mono text-xs text-indigo-200 tabular-nums">{ALL_PROMPTS.length}</span>
             </button>
+            <button type="button" onClick={() => setShowBestPractices(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0"><ShieldCheck aria-hidden="true" className="w-3.5 h-3.5"/><span>Teacher best practices</span></button>
+            <button type="button" onClick={()=>setShowFeedback(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg">Feedback</button>
           </div>
         </div>
       </header>
