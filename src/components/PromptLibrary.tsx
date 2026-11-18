@@ -22,6 +22,8 @@ import type { PromptDraft } from '../utils/personalPrompts';
 import { FirstUseGuide } from './FirstUseGuide';
 import { SavedPromptEditor } from './SavedPromptEditor';
 import { SavedPrompts } from './SavedPrompts';
+import { ProfileSettings } from './ProfileSettings';
+import { FeedbackDialog } from './FeedbackDialog';
 
 interface PromptLibraryProps {
   user?: TeacherUser;
@@ -31,6 +33,7 @@ interface PromptLibraryProps {
 
 export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, onOpenAdmin }) => {
   const workspace = useTeacherWorkspace();
+  const [showProfile,setShowProfile]=useState(false),[showFeedback,setShowFeedback]=useState(false);
   const [view, setView] = useState<'library' | 'favourites' | 'saved'>('library');
   const [draft, setDraft] = useState<PromptDraft | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,6 +110,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
                   {user.fullName}{' '}
                   <span className="text-indigo-300 font-mono text-xs">(@{user.userId})</span>
                 </span>
+                <button type="button" onClick={()=>setShowProfile(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0">Profile settings</button>
                 {onOpenAdmin && <button
                   type="button"
                   onClick={onOpenAdmin}
@@ -152,6 +156,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               </span>
             </button>
 
+            <button type="button" onClick={()=>setShowFeedback(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg">Feedback</button>
             <button type="button" onClick={() => workspace.setGuideOpen(true)} disabled={workspace.loading || Boolean(workspace.error)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-50">Quick start guide</button>
             <button
               type="button"
@@ -430,6 +435,8 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         )}
         </>}
       </main>
+      {showProfile && user && <ProfileSettings user={user} onClose={()=>setShowProfile(false)} onSaved={()=>handleNotify('Profile updated.')} />}
+      {showFeedback && <FeedbackDialog onClose={()=>setShowFeedback(false)} onSent={()=>handleNotify('Feedback sent. Thank you for helping improve Savitrix.')} />}
       {draft && <SavedPromptEditor draft={draft} onClose={() => setDraft(null)} onSave={async value => {await workspace.savePrompt(value);handleNotify(value.id ? 'Saved prompt updated.' : 'Saved to My saved prompts.');}} />}
       {workspace.guideOpen && !workspace.loading && !workspace.error && <FirstUseGuide onComplete={workspace.completeGuide} />}
 
