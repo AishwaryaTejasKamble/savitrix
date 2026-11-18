@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { useEffect, useState } from 'react';
-import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AuthPage } from './components/AuthPage';
 import { PromptLibrary } from './components/PromptLibrary';
@@ -82,18 +81,8 @@ export default function App() {
       : showAdmin
         ? isAdmin ? <AdminDashboard onBack={() => {setShowAdmin(false); window.history.replaceState({}, '', '/');}} />
           : <main className="p-8"><h1 className="text-2xl font-bold">Admin access required</h1><p className="my-4">This dashboard is restricted to the Savitrix owner.</p><button onClick={() => {setShowAdmin(false); window.history.replaceState({}, '', '/');}}>Back to library</button></main>
-        : <>{isAdmin && <nav aria-label="Admin tools" className="sticky top-0 z-40 border-b border-indigo-200 bg-white shadow-md">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-3">
-                <ShieldCheck aria-hidden="true" className="h-10 w-10 rounded-xl bg-indigo-100 p-2 text-indigo-700" />
-                <div><p className="text-base font-bold text-slate-900">Admin workspace</p><p className="text-sm text-slate-600">View teacher accounts and recent activity</p></div>
-              </div>
-              <button type="button" className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-indigo-700 px-6 py-3 text-base font-bold text-white shadow-sm transition-colors hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-700 sm:w-auto" onClick={() => {setShowAdmin(true);window.history.replaceState({}, '', '/admin');window.scrollTo({top:0});}}>
-                <ShieldCheck aria-hidden="true" className="h-5 w-5" />Admin dashboard<ArrowRight aria-hidden="true" className="h-5 w-5" />
-              </button>
-            </div>
-          </nav>}
-          <div className="bg-indigo-950 px-4 py-2 text-xs text-indigo-100">Signed-in activity is recorded to help the owner understand app usage.</div><PromptLibrary user={user} onLogout={handleLogout} /></>}
+        : <>
+          <div className="bg-indigo-950 px-4 py-2 text-xs text-indigo-100">Signed-in activity is recorded to help the owner understand app usage.</div><PromptLibrary user={user} onLogout={handleLogout} onOpenAdmin={isAdmin ? () => {setShowAdmin(true);window.history.replaceState({}, '', '/admin');window.scrollTo({top:0});} : undefined} /></>}
 
   </>;
 }
