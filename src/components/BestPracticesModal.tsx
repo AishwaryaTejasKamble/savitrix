@@ -1,6 +1,6 @@
 import React from 'react';
 import { ShieldCheck, X } from 'lucide-react';
-import { PLAYBOOK_BEST_PRACTICES } from '../data/playbookPrompts';
+import { PLAYBOOK_BEST_PRACTICES } from '../data/bestPractices';
 
 interface BestPracticesModalProps {
   isOpen: boolean;
