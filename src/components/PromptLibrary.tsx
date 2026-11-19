@@ -25,6 +25,9 @@ import { SavedPromptEditor } from './SavedPromptEditor';
 import { SavedPrompts } from './SavedPrompts';
 import { ProfileSettings } from './ProfileSettings';
 import { FeedbackDialog } from './FeedbackDialog';
+import { usePromptAccess } from '../utils/usePromptAccess';
+import { PaymentPage } from './PaymentPage';
+import { LockedPromptCard } from './LockedPromptCard';
 
 interface PromptLibraryProps {
   user?: TeacherUser;
@@ -34,6 +37,9 @@ interface PromptLibraryProps {
 
 export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, onOpenAdmin }) => {
   const workspace = useTeacherWorkspace();
+  const access = usePromptAccess();
+  const [purchaseOpen,setPurchaseOpen]=useState(window.location.pathname === '/purchase');
+  const openPurchase=()=>{setPurchaseOpen(true);window.history.replaceState({},'', '/purchase');window.scrollTo({top:0});};
   const [accountOpen,setAccountOpen]=useState(false);
   const accountRef=useRef<HTMLDivElement>(null);
   const accountButtonRef=useRef<HTMLButtonElement>(null);
@@ -75,7 +81,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
 
   const filteredPrompts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return ALL_PROMPTS.filter((item) => {
+    return access.items.filter((item) => {
       if (view === 'favourites' && !workspace.favourites.has(item.id)) return false;
       if (selectedSource !== 'all' && item.source !== selectedSource) {
         return false;
@@ -93,7 +99,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         (item.solutionMethod && item.solutionMethod.toLowerCase().includes(q))
       );
     });
-  }, [searchQuery, selectedCategory, selectedSource, view, workspace.favourites]);
+  }, [searchQuery, selectedCategory, selectedSource, view, workspace.favourites, access.items]);
 
   const scrollCategories = (direction: 'left' | 'right') => {
     if (!categoryScrollRef.current) return;
@@ -107,6 +113,8 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
     setSelectedSource('all');
     libraryTopRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  if(purchaseOpen)return <PaymentPage fullAccess={access.fullAccess} onBack={()=>{setPurchaseOpen(false);window.history.replaceState({},'', '/');access.reload();}} onAccessUpdated={access.reload}/>;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -128,6 +136,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
                 {accountOpen && <div id={accountPanelId} role="group" aria-label="Account actions" className="absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw_-_2rem)] overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm text-slate-800 shadow-xl">
                   <div className="border-b border-slate-100 px-3 py-3 mb-1"><p className="font-semibold break-words">{user.fullName}</p><p className="mt-1 text-xs text-slate-500 break-all">{user.email}</p></div>
                   <button type="button" onClick={()=>{setAccountOpen(false);setShowProfile(true);}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100 focus-visible:bg-slate-100"><Settings2 aria-hidden="true" className="h-4 w-4 text-slate-500"/>Profile settings</button>
+                  <button type="button" onClick={()=>{setAccountOpen(false);openPurchase();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100">Plans &amp; access</button>
                   {onOpenAdmin && <button type="button" onClick={()=>{setAccountOpen(false);onOpenAdmin();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100 focus-visible:bg-slate-100"><ShieldCheck aria-hidden="true" className="h-4 w-4 text-slate-500"/>Admin dashboard</button>}
                   <div className="mt-1 border-t border-slate-100 pt-1"><button type="button" onClick={()=>{setAccountOpen(false);onLogout();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-red-700 hover:bg-red-50 focus-visible:bg-red-50"><LogOut aria-hidden="true" className="h-4 w-4"/>Sign out</button></div>
                 </div>}
@@ -160,6 +169,9 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4"><div><p className="font-semibold text-indigo-950">{access.fullAccess?'Full library access':'Your free starter library'}</p><p className="mt-1 text-sm text-indigo-900">{access.fullAccess?'All 241 prompts are available to your account.':'8 free prompts are ready to try. The rest require full access.'}</p></div><button onClick={openPurchase} className="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white">{access.fullAccess?'View access details':'View purchase options'}</button></div>
+        {access.loading && <p role="status" className="text-sm text-slate-600">Checking prompt access…</p>}
+        {access.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{access.error} <button className="underline" onClick={access.reload}>Retry library</button></p>}
         <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
           {([['library', 'All prompts'], ['favourites', `Favourites (${workspace.favourites.size})`], ['saved', `My saved prompts (${workspace.saved.filter(r => !r.removed_at).length})`]] as const).map(([tab,label]) => <button key={tab} type="button" aria-current={view === tab ? 'page' : undefined} onClick={() => {setView(tab);setSearchQuery('');setSelectedCategory('all');setSelectedSource('all');}} className={`rounded-lg px-4 py-2.5 text-sm font-semibold border ${view === tab ? 'bg-indigo-700 border-indigo-700 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}>{label}</button>)}
           <button type="button" onClick={workspace.reload} disabled={workspace.loading || workspace.busy || workspace.favouriteBusy.size > 0} className="rounded-lg px-3 py-2 text-xs text-slate-600 border border-slate-200 bg-white disabled:opacity-40">Refresh my workspace</button>
@@ -373,7 +385,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         </section>
 
         {/* Prompt Cards List */}
-        {view === 'favourites' && (workspace.loading || workspace.error) ? null : filteredPrompts.length === 0 ? (
+        {access.loading || access.error || (view === 'favourites' && (workspace.loading || workspace.error)) ? null : filteredPrompts.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl p-10 text-center">
             <p className="font-display text-base font-bold text-slate-900">
               {view === 'favourites' && !workspace.favourites.size ? 'Your favourites will appear here' : 'No prompts match your current search or filter'}
@@ -391,7 +403,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
           </div>
         ) : (
           <section className="space-y-4">
-            {filteredPrompts.map((item, idx) => (
+            {filteredPrompts.map((item, idx) => item.locked ? <LockedPromptCard key={item.id} item={item} onPurchase={openPurchase}/> : (
               <PromptCard
                 key={item.id}
                 item={item}

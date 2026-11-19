@@ -1,11 +1,6 @@
-import { PLAYBOOK_PROMPTS } from './playbookPrompts';
-import { WORKBOOK_PROMPTS } from './workbookPrompts';
-import { PromptCategory, PromptItem } from './types';
-
-export const ALL_PROMPTS: PromptItem[] = [
-  ...PLAYBOOK_PROMPTS,
-  ...WORKBOOK_PROMPTS,
-];
+import { PROMPT_CATALOGUE } from './promptCatalogue';
+import type { PromptCategory, PromptItem } from './types';
+export const ALL_PROMPTS: PromptItem[] = PROMPT_CATALOGUE.map(meta => ({...meta,prompt:''}));
 
 export const PROMPT_CATEGORIES: PromptCategory[] = [
   'Lesson Planning',
