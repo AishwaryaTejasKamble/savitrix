@@ -1,3 +1,5 @@
+import {AdminAnnouncements} from './Announcements';
+import {InstituteAccounts} from './InstituteAccounts';
 import { useEffect, useState } from 'react';
 import { AdminUsageInsights } from './AdminUsageInsights';
 import { AdminTeamAccess } from './AdminTeamAccess';
@@ -7,7 +9,7 @@ import { getAuthClient } from '../utils/authClient';
 type Row = { user_id: string; email: string; full_name: string; school_or_subject: string; registered_at: string; confirmed_at: string | null; last_sign_in_at: string | null; savitrix_activity: {last_seen_at:string}[] | {last_seen_at:string} | null };
 const date = (value: string | null) => value ? new Date(value).toLocaleString() : 'Not recorded';
 export function AdminDashboard({onBack}: {onBack:()=>void}) {
- const [tab,setTab]=useState<'accounts'|'usage'|'feedback'|'access'>('accounts');
+ const [tab,setTab]=useState<'accounts'|'usage'|'feedback'|'access'|'announcements'|'institutes'>('accounts');
  const [rows,setRows]=useState<Row[]>([]), [search,setSearch]=useState(''), [query,setQuery]=useState(''), [page,setPage]=useState(0);
  const [total,setTotal]=useState(0), [counts,setCounts]=useState([0,0,0]), [loading,setLoading]=useState(true), [error,setError]=useState(''), [refresh,setRefresh]=useState(0);
  useEffect(()=>{let active=true; setLoading(true); setError(''); const db=getAuthClient();
@@ -23,8 +25,8 @@ export function AdminDashboard({onBack}: {onBack:()=>void}) {
  },[page,query,refresh]);
  return <main className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8"><div className="max-w-7xl mx-auto space-y-6">
  <header className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-indigo-700 font-semibold">SAVITRIX · ADMIN</p><h1 className="text-3xl font-bold">Admin dashboard</h1><p className="text-slate-600 mt-2">Teacher accounts, feedback and usage insights</p></div><button className="rounded-lg border px-4 py-2 bg-white" onClick={onBack}>Back to library</button></header>
- <nav aria-label="Admin sections" className="flex flex-wrap gap-2">{([['accounts','Teacher accounts'],['usage','Usage insights'],['feedback','Feedback'],['access','Team access']] as const).map(([key,label])=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key)} className={`rounded-lg border px-4 py-2.5 text-sm font-semibold ${tab===key?'bg-indigo-700 border-indigo-700 text-white':'bg-white border-slate-300 text-slate-700'}`}>{label}</button>)}</nav>
- {tab==='access'?<AdminTeamAccess/>:tab==='usage'?<AdminUsageInsights/>:tab==='feedback'?<AdminFeedback/>:<>
+ <nav aria-label="Admin sections" className="flex flex-wrap gap-2">{([['accounts','Teacher accounts'],['usage','Usage insights'],['feedback','Feedback'],['access','Team access'],['announcements','Announcements'],['institutes','Institutes']] as const).map(([key,label])=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key)} className={`rounded-lg border px-4 py-2.5 text-sm font-semibold ${tab===key?'bg-indigo-700 border-indigo-700 text-white':'bg-white border-slate-300 text-slate-700'}`}>{label}</button>)}</nav>
+ {tab==='announcements'?<AdminAnnouncements/>:tab==='institutes'?<InstituteAccounts admin/>:tab==='access'?<AdminTeamAccess/>:tab==='usage'?<AdminUsageInsights/>:tab==='feedback'?<AdminFeedback/>:<>
  <div className="grid sm:grid-cols-3 gap-4">{['Registered users','Verified emails','Active in last 7 days'].map((label,i)=><div key={label} className="bg-white border rounded-xl p-5"><p className="text-slate-500">{label}</p><p className="text-3xl font-bold mt-2">{loading?'…':counts[i]}</p></div>)}</div>
  <p className="text-sm text-slate-600">Activity records signed-in visits from this update onward, refreshed at most every five minutes while the app is visible. It does not identify anonymous visitors or measure time spent. Dates use your device’s timezone.</p>
  <form className="flex flex-wrap gap-3" onSubmit={e=>{e.preventDefault();setPage(0);setQuery(search.trim().replace(/[%_]/g,''));}}><label className="sr-only" htmlFor="admin-email-search">Search by email</label><input id="admin-email-search" className="border rounded-lg p-3 bg-white flex-1" placeholder="Search by email" maxLength={200} value={search} onChange={e=>setSearch(e.target.value)}/><button className="bg-indigo-700 text-white rounded-lg px-5">Search</button><button type="button" className="border rounded-lg px-4" onClick={()=>setRefresh(v=>v+1)}>Refresh</button></form>

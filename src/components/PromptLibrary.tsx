@@ -1,3 +1,8 @@
+import {AccessStatus} from './AccessStatus';
+import {Announcements} from './Announcements';
+import {CompanyFooter} from './CompanyFooter';
+import {InstituteAccounts} from './InstituteAccounts';
+import {WorkspaceDialog} from './WorkspaceDialog';
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   ArrowUp,
@@ -55,6 +60,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
     document.addEventListener('keydown',escape);
     return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('focusin',outside);document.removeEventListener('keydown',escape);};
   },[accountOpen]);
+  const [showInstitute,setShowInstitute]=useState(false);
   const [showProfile,setShowProfile]=useState(false),[showFeedback,setShowFeedback]=useState(false);
   const [view, setView] = useState<'library' | 'favourites' | 'saved'>('library');
   const [draft, setDraft] = useState<PromptDraft | null>(null);
@@ -114,7 +120,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
     libraryTopRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if(purchaseOpen)return <PaymentPage fullAccess={access.fullAccess} onBack={()=>{setPurchaseOpen(false);window.history.replaceState({},'', '/');access.reload();}} onAccessUpdated={access.reload}/>;
+  if(purchaseOpen)return <PaymentPage status={access.status} fullAccess={access.fullAccess} onBack={()=>{setPurchaseOpen(false);window.history.replaceState({},'', '/');access.reload();}} onAccessUpdated={access.reload}/>;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -137,6 +143,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
                   <div className="border-b border-slate-100 px-3 py-3 mb-1"><p className="font-semibold break-words">{user.fullName}</p><p className="mt-1 text-xs text-slate-500 break-all">{user.email}</p></div>
                   <button type="button" onClick={()=>{setAccountOpen(false);setShowProfile(true);}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100 focus-visible:bg-slate-100"><Settings2 aria-hidden="true" className="h-4 w-4 text-slate-500"/>Profile settings</button>
                   <button type="button" onClick={()=>{setAccountOpen(false);openPurchase();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100">Plans &amp; access</button>
+                  <button type="button" onClick={()=>{setAccountOpen(false);setShowInstitute(true);}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100">My institute</button>
                   {onOpenAdmin && <button type="button" onClick={()=>{setAccountOpen(false);onOpenAdmin();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-100 focus-visible:bg-slate-100"><ShieldCheck aria-hidden="true" className="h-4 w-4 text-slate-500"/>Admin dashboard</button>}
                   <div className="mt-1 border-t border-slate-100 pt-1"><button type="button" onClick={()=>{setAccountOpen(false);onLogout();}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-red-700 hover:bg-red-50 focus-visible:bg-red-50"><LogOut aria-hidden="true" className="h-4 w-4"/>Sign out</button></div>
                 </div>}
@@ -169,7 +176,8 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4"><div><p className="font-semibold text-indigo-950">{access.fullAccess?'Full library access':'Your free starter library'}</p><p className="mt-1 text-sm text-indigo-900">{access.fullAccess?'All 241 prompts are available to your account.':'8 free prompts are ready to try. The rest require full access.'}</p></div><button onClick={openPurchase} className="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white">{access.fullAccess?'View access details':'View purchase options'}</button></div>
+        <AccessStatus status={access.status} loading={access.loading} error={access.error} onPlans={openPurchase} onRefresh={access.reload}/>
+        <Announcements/>
         {access.loading && <p role="status" className="text-sm text-slate-600">Checking prompt access…</p>}
         {access.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{access.error} <button className="underline" onClick={access.reload}>Retry library</button></p>}
         <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
@@ -435,6 +443,8 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         )}
         </>}
       </main>
+      <CompanyFooter onPlans={openPurchase} onGuide={()=>workspace.setGuideOpen(true)} onFeedback={()=>setShowFeedback(true)}/>
+      {showInstitute&&<WorkspaceDialog title="Institute account" onClose={()=>setShowInstitute(false)}><InstituteAccounts onAccessUpdated={access.reload}/></WorkspaceDialog>}
       {showProfile && user && <ProfileSettings user={user} onClose={()=>setShowProfile(false)} onSaved={()=>handleNotify('Profile updated.')} />}
       {showFeedback && <FeedbackDialog onClose={()=>setShowFeedback(false)} onSent={()=>handleNotify('Feedback sent. Thank you for helping improve Savitrix.')} />}
       {draft && <SavedPromptEditor draft={draft} onClose={() => setDraft(null)} onSave={async value => {await workspace.savePrompt(value);handleNotify(value.id ? 'Saved prompt updated.' : 'Saved to My saved prompts.');}} />}
