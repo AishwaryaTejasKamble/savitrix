@@ -1,3 +1,4 @@
+import {CustomisationProvider} from './utils/CustomisationContext';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -78,11 +79,12 @@ export default function App() {
           setRecovering(false);
           window.history.replaceState({}, '', window.location.pathname);
         }} />
-      : showAdmin
+      : <CustomisationProvider key={user.email}>{showAdmin
         ? isAdmin ? <AdminDashboard onBack={() => {setShowAdmin(false); window.history.replaceState({}, '', '/');}} />
           : <main className="p-8"><h1 className="text-2xl font-bold">Admin access required</h1><p className="my-4">This dashboard is restricted to the Savitrix owner.</p><button onClick={() => {setShowAdmin(false); window.history.replaceState({}, '', '/');}}>Back to library</button></main>
         : <>
-          <div className="bg-indigo-950 px-4 py-2 text-xs text-indigo-100">Signed-in visits and prompt actions are recorded to improve Savitrix; customised prompt text is not collected.</div><PromptLibrary key={user.email} user={user} onLogout={handleLogout} onOpenAdmin={isAdmin ? () => {setShowAdmin(true);window.history.replaceState({}, '', '/admin');window.scrollTo({top:0});} : undefined} /></>}
+          <div className="bg-indigo-950 px-4 py-2 text-xs text-indigo-100">Signed-in visits and prompt actions are recorded to improve Savitrix; customisation values are saved privately to your profile and are not included in usage analytics.</div><PromptLibrary key={user.email} user={user} onLogout={handleLogout} onOpenAdmin={isAdmin ? () => {setShowAdmin(true);window.history.replaceState({}, '', '/admin');window.scrollTo({top:0});} : undefined} /></>}</CustomisationProvider>}
 
   </>;
 }
+
