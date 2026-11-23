@@ -158,8 +158,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
             AI for Teachers
           </h1>
           <p className="mt-2.5 max-w-3xl text-sm sm:text-base text-indigo-100/90 leading-relaxed">
-            The Practical Prompt Playbook &amp; Practical AI Workbook — browse ready-to-use classroom prompts, copy them for your lessons, ask an AI tool to translate
-            a prompt, or open directly in ChatGPT, Claude, or Gemini.
+            The Practical Prompt Playbook &amp; Practical AI Workbook — browse ready-to-use classroom prompts, customise them for your lessons, and use them with your preferred AI chatbot.
           </p>
 
           {/* Header Action Buttons */}
