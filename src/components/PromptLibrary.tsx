@@ -16,7 +16,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  ALL_PROMPTS,
   PROMPT_CATEGORIES,
   TRANSLATION_LANGUAGES,
 } from '../data/prompts';
@@ -156,9 +155,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
             AI for Teachers
           </h1>
           <p className="mt-2.5 max-w-3xl text-sm sm:text-base text-indigo-100/90 leading-relaxed">
-            The Practical Prompt Playbook &amp; Practical AI Workbook — browse all{' '}
-            <span className="font-semibold text-white tabular-nums">{ALL_PROMPTS.length}</span>{' '}
-            ready-to-use classroom prompts, copy them for your lessons, ask an AI tool to translate
+            The Practical Prompt Playbook &amp; Practical AI Workbook — browse ready-to-use classroom prompts, copy them for your lessons, ask an AI tool to translate
             a prompt, or open directly in ChatGPT, Claude, or Gemini.
           </p>
 
@@ -166,7 +163,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <button type="button" onClick={() => workspace.setGuideOpen(true)} disabled={workspace.loading || Boolean(workspace.error)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-50">Quick start guide</button>
             <button type="button" onClick={()=>{setView('library');resetFilters();}} className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0">
-              <span>Browse all prompts</span><span className="font-mono text-xs text-indigo-200 tabular-nums">{ALL_PROMPTS.length}</span>
+              <span>Browse all prompts</span>
             </button>
             <button type="button" onClick={() => setShowBestPractices(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0"><ShieldCheck aria-hidden="true" className="w-3.5 h-3.5"/><span>Teacher best practices</span></button>
             <button type="button" onClick={()=>setShowFeedback(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg">Feedback</button>
@@ -181,7 +178,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         {access.loading && <p role="status" className="text-sm text-slate-600">Checking prompt access…</p>}
         {access.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{access.error} <button className="underline" onClick={access.reload}>Retry library</button></p>}
         <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
-          {([['library', 'All prompts'], ['favourites', `Favourites (${workspace.favourites.size})`], ['saved', `My saved prompts (${workspace.saved.filter(r => !r.removed_at).length})`]] as const).map(([tab,label]) => <button key={tab} type="button" aria-current={view === tab ? 'page' : undefined} onClick={() => {setView(tab);setSearchQuery('');setSelectedCategory('all');setSelectedSource('all');}} className={`rounded-lg px-4 py-2.5 text-sm font-semibold border ${view === tab ? 'bg-indigo-700 border-indigo-700 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}>{label}</button>)}
+          {([['library', 'All prompts'], ['favourites', 'Favourites'], ['saved', 'My saved prompts']] as const).map(([tab,label]) => <button key={tab} type="button" aria-current={view === tab ? 'page' : undefined} onClick={() => {setView(tab);setSearchQuery('');setSelectedCategory('all');setSelectedSource('all');}} className={`rounded-lg px-4 py-2.5 text-sm font-semibold border ${view === tab ? 'bg-indigo-700 border-indigo-700 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}>{label}</button>)}
           <button type="button" onClick={workspace.reload} disabled={workspace.loading || workspace.busy || workspace.favouriteBusy.size > 0} className="rounded-lg px-3 py-2 text-xs text-slate-600 border border-slate-200 bg-white disabled:opacity-40">Refresh my workspace</button>
         </nav>
         {workspace.loading && <p role="status" className="text-sm text-slate-600">Syncing your favourites and saved prompts…</p>}
@@ -223,7 +220,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
           <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
             <div>
               <h2 className="font-display text-base font-bold text-slate-900">
-                Complete 2-Guide Coverage
+                Teacher guide collections
               </h2>
               <p className="mt-2 text-sm text-slate-600 leading-relaxed">
                 Every prompt from both uploaded teacher guides is indexed here with original wording,
@@ -232,21 +229,12 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               <ul className="mt-3 space-y-1.5 text-sm text-slate-700">
                 <li className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span>Practical Prompt Playbook</span>
-                  <span className="font-mono text-xs font-semibold text-indigo-700 tabular-nums">
-                    101 prompts
-                  </span>
                 </li>
                 <li className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <span>Workbook · 105 Bonus Prompts</span>
-                  <span className="font-mono text-xs font-semibold text-indigo-700 tabular-nums">
-                    105 prompts
-                  </span>
+                  <span>Workbook · Bonus Prompts</span>
                 </li>
                 <li className="flex items-center justify-between">
                   <span>Workbook · Chapter &amp; Master Prompts</span>
-                  <span className="font-mono text-xs font-semibold text-indigo-700 tabular-nums">
-                    35 prompts
-                  </span>
                 </li>
               </ul>
             </div>
@@ -290,10 +278,10 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
                 aria-label="Filter by source guide"
                 className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-slate-800"
               >
-                <option value="all">All guides (241)</option>
-                <option value="playbook">Playbook (101)</option>
-                <option value="workbook-bonus">Workbook: 105 Prompts</option>
-                <option value="workbook-chapter">Workbook: Chapters (35)</option>
+                <option value="all">All guides</option>
+                <option value="playbook">Playbook</option>
+                <option value="workbook-bonus">Workbook: Bonus prompts</option>
+                <option value="workbook-chapter">Workbook: Chapters</option>
               </select>
             </div>
 
@@ -305,7 +293,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
                 aria-label="Filter by category"
                 className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-slate-800"
               >
-                <option value="all">All {PROMPT_CATEGORIES.length} categories</option>
+                <option value="all">All categories</option>
                 {PROMPT_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -385,9 +373,6 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
 
           {/* Count & Hint Row */}
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-1">
-            <span className="tabular-nums font-medium">
-              {filteredPrompts.length} of {ALL_PROMPTS.length} prompts
-            </span>
             <span>Choose &ldquo;Ask AI to translate&rdquo; on any card.</span>
           </div>
         </section>
