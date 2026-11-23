@@ -9,7 +9,6 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   ArrowUp,
   BookOpen,
-  ChevronDown,
   LogOut,
   Settings2,
   Search,
@@ -71,9 +70,6 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
   const [showBestPractices, setShowBestPractices] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [categoriesOpen,setCategoriesOpen]=useState(false);
-  const categoryButtonRef=useRef<HTMLButtonElement>(null);
-  const categoryPanelId=useId();
   const libraryTopRef = useRef<HTMLDivElement>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -170,7 +166,6 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         <AccessStatus status={access.status} loading={access.loading} error={access.error} onPlans={openPurchase} onRefresh={access.reload}/>
         <Announcements/>
-        <PageCustomisation prompts={access.items.filter(item=>!item.locked).map(item=>item.prompt)}/>
         {access.loading && <p role="status" className="text-sm text-slate-600">Checking prompt access…</p>}
         {access.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{access.error} <button className="underline" onClick={access.reload}>Retry library</button></p>}
         <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
@@ -240,6 +235,8 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
           </div>
         </section>
 
+        <PageCustomisation prompts={access.items.filter(item=>!item.locked).map(item=>item.prompt)}/>
+
         {/* Search & Filter Controls */}
         <section ref={libraryTopRef} className="space-y-3.5">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
@@ -281,11 +278,17 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               </select>
             </div>
 
-            {/* Category picker */}
+            {/* Category Dropdown */}
             <div className="md:col-span-2">
-              <button ref={categoryButtonRef} type="button" aria-expanded={categoriesOpen} aria-controls={categoryPanelId} aria-label={selectedCategory==='all'?'Choose category':`Change category: ${selectedCategory}`} title={selectedCategory==='all'?'Choose category':selectedCategory} onClick={()=>setCategoriesOpen(open=>!open)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-left text-sm text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
-                <span className="truncate">{selectedCategory==='all'?'All categories':selectedCategory}</span><ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 transition-transform ${categoriesOpen?'rotate-180':''}`}/>
-              </button>
+              <select
+                value={selectedCategory}
+                onChange={(event)=>setSelectedCategory(event.target.value as 'all' | PromptCategory)}
+                aria-label="Filter by category"
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-slate-800"
+              >
+                <option value="all">All categories</option>
+                {PROMPT_CATEGORIES.map(category=><option key={category} value={category}>{category}</option>)}
+              </select>
             </div>
 
             {/* Translation Language Dropdown */}
@@ -304,13 +307,6 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               </select>
             </div>
           </div>
-
-          {categoriesOpen && <div id={categoryPanelId} role="group" aria-label="Choose a category" onKeyDown={event=>{if(event.key==='Escape'){setCategoriesOpen(false);categoryButtonRef.current?.focus();}}} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-slate-900">Choose a category</h2><button type="button" onClick={()=>{setCategoriesOpen(false);categoryButtonRef.current?.focus();}} className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100">Close</button></div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {(['all',...PROMPT_CATEGORIES] as const).map(category=><button key={category} type="button" aria-pressed={selectedCategory===category} onClick={()=>{setSelectedCategory(category);setCategoriesOpen(false);categoryButtonRef.current?.focus();}} className={`rounded-lg border px-4 py-3 text-left text-sm font-medium whitespace-normal ${selectedCategory===category?'border-indigo-700 bg-indigo-700 text-white':'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'}`}>{category==='all'?'All categories':category}</button>)}
-            </div>
-          </div>}
 
           {/* Count & Hint Row */}
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-1">
