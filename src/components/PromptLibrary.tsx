@@ -9,8 +9,7 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   ArrowUp,
   BookOpen,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
   LogOut,
   Settings2,
   Search,
@@ -72,7 +71,9 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
   const [showBestPractices, setShowBestPractices] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const [categoriesOpen,setCategoriesOpen]=useState(false);
+  const categoryButtonRef=useRef<HTMLButtonElement>(null);
+  const categoryPanelId=useId();
   const libraryTopRef = useRef<HTMLDivElement>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -107,12 +108,6 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
       );
     });
   }, [searchQuery, selectedCategory, selectedSource, view, workspace.favourites, access.items]);
-
-  const scrollCategories = (direction: 'left' | 'right') => {
-    if (!categoryScrollRef.current) return;
-    const offset = direction === 'left' ? -280 : 280;
-    categoryScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
-  };
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -286,21 +281,11 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               </select>
             </div>
 
-            {/* Category Dropdown */}
+            {/* Category picker */}
             <div className="md:col-span-2">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value as 'all' | PromptCategory)}
-                aria-label="Filter by category"
-                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-slate-800"
-              >
-                <option value="all">All categories</option>
-                {PROMPT_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              <button ref={categoryButtonRef} type="button" aria-expanded={categoriesOpen} aria-controls={categoryPanelId} aria-label={selectedCategory==='all'?'Choose category':`Change category: ${selectedCategory}`} title={selectedCategory==='all'?'Choose category':selectedCategory} onClick={()=>setCategoriesOpen(open=>!open)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-left text-sm text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
+                <span className="truncate">{selectedCategory==='all'?'All categories':selectedCategory}</span><ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 transition-transform ${categoriesOpen?'rotate-180':''}`}/>
+              </button>
             </div>
 
             {/* Translation Language Dropdown */}
@@ -320,57 +305,12 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
             </div>
           </div>
 
-          {/* Horizontal Category Filter Strip */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollCategories('left')}
-              aria-label="Scroll categories left"
-              className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-300 shrink-0"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div
-              ref={categoryScrollRef}
-              className="category-scroll flex items-center gap-2 overflow-x-auto py-1 flex-1"
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('all')}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap shrink-0 ${
-                  selectedCategory === 'all'
-                    ? 'bg-indigo-700 border-indigo-700 text-white'
-                    : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-100'
-                }`}
-              >
-                All Prompts
-              </button>
-              {PROMPT_CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap shrink-0 ${
-                    selectedCategory === cat
-                      ? 'bg-indigo-700 border-indigo-700 text-white'
-                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-100'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+          {categoriesOpen && <div id={categoryPanelId} role="group" aria-label="Choose a category" onKeyDown={event=>{if(event.key==='Escape'){setCategoriesOpen(false);categoryButtonRef.current?.focus();}}} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-slate-900">Choose a category</h2><button type="button" onClick={()=>{setCategoriesOpen(false);categoryButtonRef.current?.focus();}} className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100">Close</button></div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {(['all',...PROMPT_CATEGORIES] as const).map(category=><button key={category} type="button" aria-pressed={selectedCategory===category} onClick={()=>{setSelectedCategory(category);setCategoriesOpen(false);categoryButtonRef.current?.focus();}} className={`rounded-lg border px-4 py-3 text-left text-sm font-medium whitespace-normal ${selectedCategory===category?'border-indigo-700 bg-indigo-700 text-white':'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'}`}>{category==='all'?'All categories':category}</button>)}
             </div>
-
-            <button
-              type="button"
-              onClick={() => scrollCategories('right')}
-              aria-label="Scroll categories right"
-              className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-300 shrink-0"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          </div>}
 
           {/* Count & Hint Row */}
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-1">
