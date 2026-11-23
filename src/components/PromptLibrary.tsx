@@ -30,7 +30,6 @@ import { FirstUseGuide } from './FirstUseGuide';
 import { SavedPromptEditor } from './SavedPromptEditor';
 import { SavedPrompts } from './SavedPrompts';
 import { ProfileSettings } from './ProfileSettings';
-import { FeedbackDialog } from './FeedbackDialog';
 import { usePromptAccess } from '../utils/usePromptAccess';
 import { PaymentPage } from './PaymentPage';
 import { LockedPromptCard } from './LockedPromptCard';
@@ -63,7 +62,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
     return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('focusin',outside);document.removeEventListener('keydown',escape);};
   },[accountOpen]);
   const [showInstitute,setShowInstitute]=useState(false);
-  const [showProfile,setShowProfile]=useState(false),[showFeedback,setShowFeedback]=useState(false);
+  const [showProfile,setShowProfile]=useState(false);
   const [view, setView] = useState<'library' | 'favourites' | 'saved'>('library');
   const [draft, setDraft] = useState<PromptDraft | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,7 +167,6 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
               <span>Browse all prompts</span>
             </button>
             <button type="button" onClick={() => setShowBestPractices(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0"><ShieldCheck aria-hidden="true" className="w-3.5 h-3.5"/><span>Teacher best practices</span></button>
-            <button type="button" onClick={()=>setShowFeedback(true)} className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg">Feedback</button>
           </div>
         </div>
       </header>
@@ -431,10 +429,9 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         )}
         </>}
       </main>
-      <CompanyFooter onPlans={openPurchase} onGuide={()=>workspace.setGuideOpen(true)} onFeedback={()=>setShowFeedback(true)}/>
+      <CompanyFooter onPlans={openPurchase} onGuide={()=>workspace.setGuideOpen(true)}/>
       {showInstitute&&<WorkspaceDialog title="Institute account" onClose={()=>setShowInstitute(false)}><InstituteAccounts onAccessUpdated={access.reload}/></WorkspaceDialog>}
       {showProfile && user && <ProfileSettings user={user} onClose={()=>setShowProfile(false)} onSaved={()=>handleNotify('Profile updated.')} />}
-      {showFeedback && <FeedbackDialog onClose={()=>setShowFeedback(false)} onSent={()=>handleNotify('Feedback sent. Thank you for helping improve Savitrix.')} />}
       {draft && <SavedPromptEditor draft={draft} onClose={() => setDraft(null)} onSave={async value => {await workspace.savePrompt(value);handleNotify(value.id ? 'Saved prompt updated.' : 'Saved to My saved prompts.');}} />}
       {workspace.guideOpen && !workspace.loading && !workspace.error && <FirstUseGuide onComplete={workspace.completeGuide} />}
 
