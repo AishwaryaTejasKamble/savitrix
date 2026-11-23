@@ -1,3 +1,5 @@
+import {useCustomisation} from '../utils/CustomisationContext';
+import {resolveValues} from '../utils/customisation';
 import React, { useMemo, useState } from 'react';
 import { ArrowUpRight, Check, Copy, Languages, RotateCcw, SlidersHorizontal, Star, Save } from 'lucide-react';
 import {
@@ -60,9 +62,12 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   const [copied, setCopied] = useState(false);
   const [showTranslateBar, setShowTranslateBar] = useState(false);
   const [showCustomizeBar, setShowCustomizeBar] = useState(false);
-  const [placeholderValues, setPlaceholderValues] = useState<Record<string, string>>({});
+  const custom = useCustomisation();
+  const override = custom.state.overrides[item.id] || {};
 
   const placeholders = useMemo(() => extractPlaceholders(item.prompt), [item.prompt]);
+
+  const placeholderValues = useMemo(()=>resolveValues(placeholders,custom.state.global,override),[placeholders,custom.state.global,override]);
 
   const effectivePrompt = useMemo(
     () => applyPlaceholders(item.prompt, placeholderValues),
@@ -105,11 +110,11 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   };
 
   const handlePlaceholderChange = (token: string, value: string) => {
-    setPlaceholderValues((prev) => ({ ...prev, [token]: value }));
+    try {custom.change({...custom.state,overrides:{...custom.state.overrides,[item.id]:{...override,[token]:value}}});}catch(e){onNotify(e instanceof Error?e.message:'Could not update customisation.');}
   };
 
   const handleResetCustom = () => {
-    setPlaceholderValues({});
+    const next={...custom.state.overrides};delete next[item.id];custom.change({...custom.state,overrides:next});
   };
 
   const translationPayload = buildTranslationPrompt(effectivePrompt, selectedLanguage);
@@ -237,16 +242,16 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         <div className="mt-3 rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold text-slate-800">
-              Fill in the placeholders below to customize this prompt. All buttons above will use your updated prompt.
+              Shared values are filled in below. Edit a field to override it for this prompt only. Copy, save and AI tools use these values.
             </p>
-            {hasCustomValues && (
+            {Object.keys(override).length > 0 && (
               <button
                 type="button"
                 onClick={handleResetCustom}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
               >
                 <RotateCcw className="w-3 h-3" />
-                <span>Reset</span>
+                <span>Use shared values</span>
               </button>
             )}
           </div>
@@ -329,3 +334,4 @@ export const PromptCard: React.FC<PromptCardProps> = ({
     </article>
   );
 };
+

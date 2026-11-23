@@ -1,0 +1,20 @@
+import {createContext,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
+import {getAuthClient} from './authClient';
+import {emptyCustomisation,validateCustomisation,type CustomisationState} from './customisation';
+type Context={state:CustomisationState;ready:boolean;saving:boolean;error:string;dirty:boolean;change:(next:CustomisationState)=>void;flush:()=>Promise<void>;retry:()=>void};
+const CustomisationContext=createContext<Context|null>(null);
+export function CustomisationProvider({children}:{children:ReactNode}){
+ const [state,setState]=useState(emptyCustomisation),[ready,setReady]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState(''),[dirty,setDirty]=useState(false),[revision,setRevision]=useState(0);
+ const owner=useRef(''),alive=useRef(true),latest=useRef(state),version=useRef(0),saved=useRef(0),queue=useRef<Promise<void>>(Promise.resolve());
+ const cache=(value:CustomisationState,isDirty:boolean)=>{if(!owner.current)return;try{localStorage.setItem('savitrix_customisation_'+owner.current,JSON.stringify({state:value,dirty:isDirty}));}catch{}};
+ useEffect(()=>{alive.current=true;let cancelled=false;void(async()=>{try{const db=getAuthClient();const auth=await db.auth.getUser();if(auth.error||!auth.data.user)throw Error('Sign in again to load customisation.');const id=auth.data.user.id;let cached:{state:CustomisationState;dirty:boolean}|null=null;try{const raw=JSON.parse(localStorage.getItem('savitrix_customisation_'+id)||'null');if(raw)cached={state:validateCustomisation(raw.state),dirty:raw.dirty===true};}catch{}
+ const r=await db.from('savitrix_customisation').select('state').eq('user_id',id).maybeSingle();if(cancelled)return;owner.current=id;if(r.error&&!cached)throw Error('Customisation could not load. Retry before editing prompts.');
+ const value=cached?.dirty||r.error?cached!.state:validateCustomisation(r.data?.state||emptyCustomisation());latest.current=value;setState(value);if(cached?.dirty||r.error){version.current=1;setDirty(true);}setReady(true);setError(r.error?'Offline: using this profile’s saved values. Retry to sync.':'');cache(value,Boolean(cached?.dirty||r.error));
+ }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Customisation could not load.');}})();return()=>{cancelled=true;alive.current=false;owner.current='';};},[]);
+ const change=(next:CustomisationState)=>{if(!ready||!owner.current)return;const valid=validateCustomisation(next);latest.current=valid;version.current++;cache(valid,true);setState(valid);setDirty(true);setError('');};
+ const flush=async()=>{const id=owner.current;if(!ready||!id)return;const payload=latest.current,at=version.current;if(at===saved.current)return;
+ const work=queue.current.catch(()=>{}).then(async()=>{if(at<=saved.current)return;if(alive.current)setSaving(true);try{const auth=await getAuthClient().auth.getUser();if(auth.error||auth.data.user?.id!==id)throw Error('Sign in to this profile to save customisation.');const r=await getAuthClient().from('savitrix_customisation').upsert({user_id:id,state:payload},{onConflict:'user_id'});if(r.error)throw r.error;saved.current=at;if(alive.current){const stillDirty=version.current!==at;setDirty(stillDirty);setError('');cache(latest.current,stillDirty);}}catch{if(alive.current)setError('Not synced yet. Your values are kept on this device for this profile. Retry saving.');throw Error('Customisation has not synced.');}finally{if(alive.current)setSaving(false);}});queue.current=work;await work;};
+ useEffect(()=>{if(!ready||!dirty)return;const timer=window.setTimeout(()=>{void flush().catch(()=>{});},700);return()=>window.clearTimeout(timer);},[state,ready,revision]);
+ return <CustomisationContext.Provider value={{state,ready,saving,error,dirty,change,flush,retry:()=>{if(ready)setRevision(n=>n+1);else window.location.reload();}}}>{children}</CustomisationContext.Provider>;
+}
+export function useCustomisation(){const context=useContext(CustomisationContext);if(!context)throw Error('Customisation provider missing');return context;}

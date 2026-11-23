@@ -1,3 +1,5 @@
+import {PageCustomisation} from './PageCustomisation';
+import {useCustomisation} from '../utils/CustomisationContext';
 import {AccessStatus} from './AccessStatus';
 import {Announcements} from './Announcements';
 import {CompanyFooter} from './CompanyFooter';
@@ -41,6 +43,7 @@ interface PromptLibraryProps {
 
 export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, onOpenAdmin }) => {
   const workspace = useTeacherWorkspace();
+  const custom = useCustomisation();
   const access = usePromptAccess();
   const [purchaseOpen,setPurchaseOpen]=useState(window.location.pathname === '/purchase');
   const openPurchase=()=>{setPurchaseOpen(true);window.history.replaceState({},'', '/purchase');window.scrollTo({top:0});};
@@ -175,6 +178,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         <AccessStatus status={access.status} loading={access.loading} error={access.error} onPlans={openPurchase} onRefresh={access.reload}/>
         <Announcements/>
+        <PageCustomisation prompts={access.items.filter(item=>!item.locked).map(item=>item.prompt)}/>
         {access.loading && <p role="status" className="text-sm text-slate-600">Checking prompt access…</p>}
         {access.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{access.error} <button className="underline" onClick={access.reload}>Retry library</button></p>}
         <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
@@ -378,7 +382,7 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         </section>
 
         {/* Prompt Cards List */}
-        {access.loading || access.error || (view === 'favourites' && (workspace.loading || workspace.error)) ? null : filteredPrompts.length === 0 ? (
+        {!custom.ready || access.loading || access.error || (view === 'favourites' && (workspace.loading || workspace.error)) ? null : filteredPrompts.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl p-10 text-center">
             <p className="font-display text-base font-bold text-slate-900">
               {view === 'favourites' && !workspace.favourites.size ? 'Your favourites will appear here' : 'No prompts match your current search or filter'}
@@ -454,3 +458,4 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
     </div>
   );
 };
+
