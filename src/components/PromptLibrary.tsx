@@ -168,12 +168,14 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
         <Announcements/>
         {access.loading && <p role="status" className="text-sm text-slate-600">Checking prompt access…</p>}
         {access.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{access.error} <button className="underline" onClick={access.reload}>Retry library</button></p>}
+        {workspace.loading && <p role="status" className="text-sm text-slate-600">Syncing your favourites and saved prompts…</p>}
+        {workspace.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{workspace.error} <button type="button" onClick={workspace.reload} className="font-semibold underline">Retry</button></div>}
+        {view === 'saved' && <>
         <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
           {([['library', 'All prompts'], ['favourites', 'Favourites'], ['saved', 'My saved prompts']] as const).map(([tab,label]) => <button key={tab} type="button" aria-current={view === tab ? 'page' : undefined} onClick={() => {setView(tab);setSearchQuery('');setSelectedCategory('all');setSelectedSource('all');}} className={`rounded-lg px-4 py-2.5 text-sm font-semibold border ${view === tab ? 'bg-indigo-700 border-indigo-700 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}>{label}</button>)}
           <button type="button" onClick={workspace.reload} disabled={workspace.loading || workspace.busy || workspace.favouriteBusy.size > 0} className="rounded-lg px-3 py-2 text-xs text-slate-600 border border-slate-200 bg-white disabled:opacity-40">Refresh my workspace</button>
         </nav>
-        {workspace.loading && <p role="status" className="text-sm text-slate-600">Syncing your favourites and saved prompts…</p>}
-        {workspace.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{workspace.error} <button type="button" onClick={workspace.reload} className="font-semibold underline">Retry</button></div>}
+        </>}
         {view === 'saved' ? (!workspace.loading && !workspace.error && <SavedPrompts rows={workspace.saved} busy={workspace.busy} onEdit={setDraft} onArchive={workspace.archivePrompt} onNotify={handleNotify} />) : <>
         {view === 'favourites' && <div><h2 className="text-xl font-bold">Favourites</h2><p className="mt-1 text-sm text-slate-600">Your starred library prompts, synced with your account.</p></div>}
         {/* Two Info Cards */}
@@ -234,6 +236,11 @@ export const PromptLibrary: React.FC<PromptLibraryProps> = ({ user, onLogout, on
             </p>
           </div>
         </section>
+
+        <nav aria-label="Prompt collections" className="flex flex-wrap gap-2">
+          {([['library', 'All prompts'], ['favourites', 'Favourites'], ['saved', 'My saved prompts']] as const).map(([tab,label]) => <button key={tab} type="button" aria-current={view === tab ? 'page' : undefined} onClick={() => {setView(tab);setSearchQuery('');setSelectedCategory('all');setSelectedSource('all');}} className={`rounded-lg px-4 py-2.5 text-sm font-semibold border ${view === tab ? 'bg-indigo-700 border-indigo-700 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}>{label}</button>)}
+          <button type="button" onClick={workspace.reload} disabled={workspace.loading || workspace.busy || workspace.favouriteBusy.size > 0} className="rounded-lg px-3 py-2 text-xs text-slate-600 border border-slate-200 bg-white disabled:opacity-40">Refresh my workspace</button>
+        </nav>
 
         <PageCustomisation prompts={access.items.filter(item=>!item.locked).map(item=>item.prompt)}/>
 
